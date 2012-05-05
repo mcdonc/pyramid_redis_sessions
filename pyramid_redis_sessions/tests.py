@@ -320,6 +320,12 @@ class TestRedisDict(unittest.TestCase):
         for val in self.rdict.iterkeys():
             self.assert_(val in keys)
 
+    def test_mutablevalue_changed(self):
+        self.rdict['a'] = {'1':1, '2':2}
+        tmp = self.rdict['a']
+        tmp['3'] = 4
+        self.assertEqual(self.rdict['a'], {'1':1, '2':2, '3':3})
+
 class TestPyramidRedisSessions(unittest.TestCase):
     def get_client(self, redis=None):
         if redis is None:
