@@ -3,7 +3,6 @@
 import binascii
 import os
 
-from pyramid.compat import text_
 from pyramid.decorator import reify
 from pyramid.interfaces import ISession
 from zope.interface import implementer
@@ -16,6 +15,7 @@ from .util import (
     refresh,
     to_unicode,
     )
+from .compat import text_
 
 
 class _SessionState(object):
