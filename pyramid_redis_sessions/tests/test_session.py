@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import itertools
+import json
 import time
 import unittest
 
-from ..compat import cPickle
-
-
 class TestRedisSession(unittest.TestCase):
     def _makeOne(self, redis, session_id, new, new_session,
-                 serialize=cPickle.dumps, deserialize=cPickle.loads):
+                 serialize=json.dumps, deserialize=json.loads):
         from ..session import RedisSession
         return RedisSession(
             redis=redis,
@@ -21,7 +19,7 @@ class TestRedisSession(unittest.TestCase):
             )
 
     def _set_up_session_in_redis(self, redis, session_id, timeout,
-                                 session_dict=None, serialize=cPickle.dumps):
+                                 session_dict=None, serialize=json.dumps):
         if session_dict is None:
             session_dict = {}
         redis.set(session_id, serialize({

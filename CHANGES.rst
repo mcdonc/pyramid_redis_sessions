@@ -169,3 +169,18 @@ Changelog
                assuming there is always one session per request. See
                https://github.com/ericrasmussen/pyramid_redis_sessions/issues/60
                for details. Thanks jvanasco!
+-Unreleased
+
+             * Compatibility with Pyramid 2.X.  TODO: document how
+               to configure to retain backwards compatibility with both
+               old *cookie* serializations and old *redis* serializations.
+               Currently there is no way to configure bw compat for
+               old cookie serializations, as I've (chrism) hardcoded a
+               JSONSerializer as the cookie serializer, and session id values
+               stored in cookies before this change will not be deserializable
+               at all. Also ensure compatibility with Pyramids before 2.X.
+
+             * Test under Python 3.6 and 3.7.
+
+             * Add explicit dependency on webob 1.3+ to gain
+               SignedSerializer.

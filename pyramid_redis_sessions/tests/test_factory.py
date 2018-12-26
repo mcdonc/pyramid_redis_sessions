@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import json
 import unittest
+import webob.cookies
 
 from pyramid import testing
 
@@ -18,16 +20,24 @@ class TestRedisSessionFactory(unittest.TestCase):
         self.assertNotIn('Max-Age=0', header_value)
 
     def _get_session_id(self, request):
-        from ..compat import cPickle
         from ..util import get_unique_session_id
         redis = request.registry._redis_sessions
         session_id = get_unique_session_id(redis, timeout=100,
-                                           serialize=cPickle.dumps)
+                                           serialize=json.dumps)
         return session_id
 
-    def _serialize(self, session_id, secret='secret'):
-        from pyramid.session import signed_serialize
-        return signed_serialize(session_id, secret)
+    def _serialize(
+            self,
+            session_id,
+            secret='secret',
+            salt='pyramid.session',
+            hashalg='sha512',
+    ):
+        serializer = webob.cookies.JSONSerializer()
+        signed_serializer = webob.cookies.SignedSerializer(
+            secret, salt, hashalg, serializer=serializer
+        )
+        return signed_serializer.dumps(session_id)
 
     def _set_session_cookie(self, request, session_id, cookie_name='session',
                             secret='secret'):
@@ -111,7 +121,7 @@ class TestRedisSessionFactory(unittest.TestCase):
         # settings to get the expected header to compare against
         response_to_check_against = webob.Response()
         response_to_check_against.set_cookie(
-            key=cookie_name,
+            cookie_name,
             value=self._serialize(session_id=request.session.session_id,
                                   secret=secret),
             max_age=cookie_max_age,

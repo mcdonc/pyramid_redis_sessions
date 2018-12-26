@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import functools
+import json
 
-from pyramid.session import (
-    signed_deserialize,
-    signed_serialize,
+from webob.cookies import (
+    SignedSerializer,
+    JSONSerializer,
     )
 
-from .compat import cPickle
 from .connection import get_default_connection
 from .session import RedisSession
 from .util import (
@@ -15,7 +15,9 @@ from .util import (
     _parse_settings,
     get_unique_session_id,
     )
-
+from .compat import (
+    bytes_
+    )
 
 def includeme(config):
     """
@@ -77,9 +79,11 @@ def RedisSessionFactory(
     encoding_errors='strict',
     unix_socket_path=None,
     client_callable=None,
-    serialize=cPickle.dumps,
-    deserialize=cPickle.loads,
+    serialize=json.dumps,
+    deserialize=json.loads,
     id_generator=_generate_session_id,
+    salt='pyramid.session',
+    hashalg='sha512',
     ):
     """
     Constructs and returns a session factory that will provide session data
@@ -145,17 +149,25 @@ def RedisSessionFactory(
 
     ``serialize``
     A function to serialize the session dict for storage in Redis.
-    Default: ``cPickle.dumps``.
+    Default: ``json.dumps``.
 
     ``deserialize``
     A function to deserialize the stored session data in Redis.
-    Default: ``cPickle.loads``.
+    Default: ``json.loads``.
 
     ``id_generator``
     A function to create a unique ID to be used as the session key when a
     session is first created.
     Default: private function that uses sha1 with the time and random elements
     to create a 40 character unique ID.
+
+    ``salt``
+    A string used as the cookie value salt.
+    Default: pyramid.session
+
+    ``hashalg``
+    The hashing algorithm used to sign the cookie.
+    Default: sha512
 
     The following arguments are also passed straight to the ``StrictRedis``
     constructor and allow you to further configure the Redis client::
@@ -189,6 +201,8 @@ def RedisSessionFactory(
             request=request,
             cookie_name=cookie_name,
             secret=secret,
+            salt=salt,
+            hashalg=hashalg
             )
 
         new_session = functools.partial(
@@ -247,7 +261,7 @@ def RedisSessionFactory(
     return factory
 
 
-def _get_session_id_from_cookie(request, cookie_name, secret):
+def _get_session_id_from_cookie(request, cookie_name, secret, salt, hashalg):
     """
     Attempts to retrieve and return a session ID from a session cookie in the
     current request. Returns None if the cookie isn't found or the value cannot
@@ -255,9 +269,14 @@ def _get_session_id_from_cookie(request, cookie_name, secret):
     """
     cookieval = request.cookies.get(cookie_name)
 
+    cookieval_serializer = JSONSerializer()
+    signed_cookieval_serializer = SignedSerializer(
+        secret, salt, hashalg, serializer=cookieval_serializer
+    )
+
     if cookieval is not None:
         try:
-            session_id = signed_deserialize(cookieval, secret)
+            session_id = signed_cookieval_serializer.loads(bytes_(cookieval))
             return session_id
         except ValueError:
             pass
@@ -276,12 +295,18 @@ def _set_cookie(
     cookie_secure,
     cookie_httponly,
     secret,
+    salt='pyramid.session',
+    hashalg='sha512',
     ):
     """
     `session` is via functools.partial
     `request` and `response` are appended by add_response_callback
     """
-    cookieval = signed_serialize(session.session_id, secret)
+    cookieval_serializer = JSONSerializer()
+    signed_cookieval_serializer = SignedSerializer(
+        secret, salt, hashalg, serializer=cookieval_serializer
+    )
+    cookieval = signed_cookieval_serializer.dumps(session.session_id)
     response.set_cookie(
         cookie_name,
         value=cookieval,

@@ -20,7 +20,7 @@ except IOError:
     README = CHANGES = ''
 
 # set up requires
-install_requires = ['redis>=2.10.0', 'pyramid>=1.3']
+install_requires = ['redis>=2.10.0', 'pyramid>=1.3', 'webob>=1.3']
 testing_requires = ['nose']
 testing_extras = testing_requires + ['coverage']
 docs_extras = ['sphinx']

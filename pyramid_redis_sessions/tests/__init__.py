@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from ..compat import cPickle
-
+import json
 
 class DummySession(object):
     def __init__(self, session_id, redis, timeout=300,
-                 serialize=cPickle.dumps):
+                 serialize=json.dumps):
         self.session_id = session_id
         self.redis = redis
         self.timeout = timeout

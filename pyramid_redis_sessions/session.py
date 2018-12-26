@@ -8,7 +8,9 @@ from pyramid.decorator import reify
 from pyramid.interfaces import ISession
 from zope.interface import implementer
 
-from .compat import cPickle
+from webob.cookies import JSONSerializer
+json_serializer = JSONSerializer()
+
 from .util import (
     persist,
     refresh,
@@ -60,11 +62,11 @@ class RedisSession(object):
 
     ``serialize``
     A function to serialize pickleable Python objects. Default:
-    ``cPickle.dumps``.
+    ``json.dumps``.
 
     ``deserialize``
     The dual of ``serialize``, to convert serialized strings back to Python
-    objects. Default: ``cPickle.loads``.
+    objects. Default: ``json.loads``.
     """
 
     def __init__(
@@ -73,8 +75,8 @@ class RedisSession(object):
         session_id,
         new,
         new_session,
-        serialize=cPickle.dumps,
-        deserialize=cPickle.loads
+        serialize=json_serializer.dumps,
+        deserialize=json_serializer.loads
         ):
 
         self.redis = redis
