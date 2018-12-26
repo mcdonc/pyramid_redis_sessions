@@ -19,6 +19,8 @@ from .compat import (
     bytes_
     )
 
+cookieval_serializer = JSONSerializer()
+
 def includeme(config):
     """
     This function is detected by Pyramid so that you can easily include
@@ -239,6 +241,8 @@ def RedisSessionFactory(
             cookie_secure=cookie_secure,
             cookie_httponly=cookie_httponly,
             secret=secret,
+            salt=salt,
+            hashalg=hashalg,
             )
         delete_cookie = functools.partial(
             _delete_cookie,
@@ -269,7 +273,6 @@ def _get_session_id_from_cookie(request, cookie_name, secret, salt, hashalg):
     """
     cookieval = request.cookies.get(cookie_name)
 
-    cookieval_serializer = JSONSerializer()
     signed_cookieval_serializer = SignedSerializer(
         secret, salt, hashalg, serializer=cookieval_serializer
     )
@@ -295,14 +298,13 @@ def _set_cookie(
     cookie_secure,
     cookie_httponly,
     secret,
-    salt='pyramid.session',
-    hashalg='sha512',
+    salt,
+    hashalg,
     ):
     """
     `session` is via functools.partial
     `request` and `response` are appended by add_response_callback
     """
-    cookieval_serializer = JSONSerializer()
     signed_cookieval_serializer = SignedSerializer(
         secret, salt, hashalg, serializer=cookieval_serializer
     )
